@@ -15,20 +15,24 @@ PARKS_DEV=${GUID}-parks-dev
 echo "Setting up Parks Production Environment in project ${PARKS_PROD}"
 
 # switch to prod project
+echo "Switching to ${PARKS_PROD} project"
 oc project ${PARKS_PROD}
 
 # grant the correct permissions to the Jenkins service account
+echo "Granting jenkins permissions for ${PARKS_PROD} project"
 oc policy add-role-to-user view --serviceaccount=default -n ${PARKS_PROD}
 oc policy add-role-to-group system:image-puller system:serviceaccounts:${PARKS_PROD} -n ${PARKS_DEV}
 oc policy add-role-to-user edit system:serviceaccount:$GUID-jenkins:jenkins -n ${PARKS_PROD}
 oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n ${PARKS_PROD}
 
 # set up a MongoDB database
+echo "Setting up mongodb for ${PARKS_PROD} project"
 oc create -f ../templates/mongodb-headless-svc.yml -n ${PARKS_PROD}
 oc create -f ../templates/mongodb-svc.yml -n ${PARKS_PROD}
 oc create -f ../templates/mongodb-stateful.yml -n ${PARKS_PROD}
 
 #configmaps
+echo "Setting config maps for ${PARKS_PROD} project"
 oc create configmap mlbparks-blue-config --from-env-file= ../templates/mlbparks-blue.env -n ${PARKS_PROD}
 oc create configmap nationalparks-blue-config --from-env-file= ../templates/nationalparks-blue.env -n ${PARKS_PROD}
 oc create configmap parksmap-blue-config --from-env-file= ../templates/parksmap-blue.env -n ${PARKS_PROD}
@@ -37,6 +41,7 @@ oc create configmap nationalparks-green-config --from-env-file= ../templates/nat
 oc create configmap parksmap-green-config --from-env-file= ../templates/parksmap-green.env -n ${PARKS_PROD}
 
 #blue
+echo "Blue app for ${PARKS_PROD} project"
 oc new-app ${GUID}-parks-dev/mlbparks:0.0 --name=mlbparks-blue --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
 oc new-app ${GUID}-parks-dev/nationalparks:0.0 --name=nationalparks-blue --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
 oc new-app ${GUID}-parks-dev/parksmap:0.0 --name=parksmap-blue --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
@@ -50,6 +55,7 @@ oc set env dc/nationalparks-blue --from=configmap/nationalparks-blue-config -n $
 oc set env dc/parksmap-blue --from=configmap/parksmap-blue-config -n ${PARKS_PROD}
 
 #green
+echo "Green app for ${PARKS_PROD} project"
 oc new-app ${GUID}-parks-dev/mlbparks:0.0 --name=mlbparks-green --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
 oc new-app ${GUID}-parks-dev/nationalparks:0.0 --name=nationalparks-green --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
 oc new-app ${GUID}-parks-dev/parksmap:0.0 --name=parksmap-green --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
@@ -63,6 +69,7 @@ oc set env dc/nationalparks-green --from=configmap/nationalparks-green-config -n
 oc set env dc/parksmap-green --from=configmap/parksmap-green-config -n ${PARKS_PROD}
 
 #expose
+echo "Exposing dc for ${PARKS_PROD} project"
 oc expose dc mlbparks-green --port 8080 -n ${PARKS_PROD}
 oc expose dc nationalparks-green --port 8080 -n ${PARKS_PROD}
 oc expose dc parksmap-green --port 8080 -n ${PARKS_PROD}
@@ -72,6 +79,7 @@ oc expose dc nationalparks-blue --port 8080 -n ${PARKS_PROD}
 oc expose dc parksmap-blue --port 8080 -n ${PARKS_PROD}
 
 #set green live
+echo "Setting green for ${PARKS_PROD} project"
 oc expose svc mlbparks-green --name mlbparks -n ${PARKS_PROD} --labels="type=parksmap-backend"
 oc expose svc nationalparks-green --name nationalparks -n ${PARKS_PROD} --labels="type=parksmap-backend"
 oc expose svc parksmap-green --name parksmap -n ${PARKS_PROD}

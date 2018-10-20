@@ -54,3 +54,4 @@ oc get routes -n ${NEXUS}
 # (this only works with OpenShift 3.10 and newer)
 oc annotate route nexus3 console.alpha.openshift.io/overview-app-route=true -n ${NEXUS}
 oc annotate route nexus-registry console.alpha.openshift.io/overview-app-route=false -n ${NEXUS}
+echo "${NEXUS} completed successfully"

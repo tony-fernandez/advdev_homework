@@ -59,3 +59,4 @@ oc set probe dc/parksmap --readiness --failure-threshold 5 --initial-delay-secon
 oc expose svc mlbparks -n ${PARKS_DEV} --labels="type=parksmap-backend"
 oc expose svc nationalparks -n ${PARKS_DEV} --labels="type=parksmap-backend"
 oc expose svc parksmap -n ${PARKS_DEV}
+echo "${PARKS_DEV} completed successfully"
