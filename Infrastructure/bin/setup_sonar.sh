@@ -26,7 +26,17 @@ oc expose service sonarqube
 
 # Create persistent volume claim and set it to sonarqube
 echo "Creating persistent volume claim..."
-oc create -f ../templates/sonarqube-pvc.yaml
+echo "apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarqube-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi" | oc create -f -
+
 oc set volume dc/sonarqube --add --overwrite --name=sonarqube-volume-1 --mount-path=/opt/sonarqube/data/ --type persistentVolumeClaim --claim-name=sonarqube-pvc
 
 # Set resources

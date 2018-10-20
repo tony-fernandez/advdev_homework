@@ -1,15 +1,15 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: "mongodb-internal"
+  name: mongodb-internal
   labels:
-    name: "mongodb"
+    name: mongodb
   annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: true
 spec:
   clusterIP: None
   ports:
     - name: mongodb
       port: 27017
   selector:
-    name: "mongodb"
+    name: mongodb

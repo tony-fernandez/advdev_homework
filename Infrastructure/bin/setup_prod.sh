@@ -6,12 +6,12 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-MLB_PARKS_BLUE='MLB Parks (Blue)'
-NATIONAL_PARKS_BLUE='National Parks (Blue)'
-PARKS_MAP_BLUE='ParksMap (Blue)'
-MLB_PARKS_GREEN='MLB Parks (Green)'
-NATIONAL_PARKS_GREEN='National Parks (Green)'
-PARKS_MAP_GREEN='ParksMap (Green)'
+MLB_PARKS_BLUE=MLB Parks (Blue)
+NATIONAL_PARKS_BLUE=National Parks (Blue)
+PARKS_MAP_BLUE=ParksMap (Blue)
+MLB_PARKS_GREEN=MLB Parks (Green)
+NATIONAL_PARKS_GREEN=National Parks (Green)
+PARKS_MAP_GREEN=ParksMap (Green)
 DB_HOST=mongodb
 DB_PORT=27017
 DB_USERNAME=mongodb
@@ -37,9 +37,94 @@ oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n $
 
 # set up a MongoDB database
 echo "Setting up mongodb for ${PARKS_PROD} project"
-oc create -f ../templates/mongodb-headless-svc.yml -n ${PARKS_PROD}
-oc create -f ../templates/mongodb-svc.yml -n ${PARKS_PROD}
-oc create -f ../templates/mongodb-stateful.yml -n ${PARKS_PROD}
+
+
+echo "apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-internal
+  labels:
+    name: mongodb
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: true
+spec:
+  clusterIP: None
+  ports:
+    - name: mongodb
+      port: 27017
+  selector:
+    name: mongodb" | oc create -f -
+
+echo "apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  labels:
+    name: mongodb
+spec:
+  ports:
+    - name: mongodb
+      port: 27017
+  selector:
+    name: mongodb" | oc create -f -
+
+
+echo "apiVersion: v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  serviceName: mongodb-internal
+  replicas: 1
+  selector:
+    matchLabels:
+      name: mongodb
+  template:
+    metadata:
+      labels:
+        name: mongodb
+    spec:
+      containers:
+        - name: mongo-container
+          image: registry.access.redhat.com/rhscl/mongodb-34-rhel7:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 27017
+          args:
+            - run-mongod-replication
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /var/lib/mongodb/data
+          env:
+            - name: MONGODB_DATABASE
+              value: parks
+            - name: MONGODB_USER
+              value: mongodb
+            - name: MONGODB_PASSWORD
+              value: mongodb
+            - name: MONGODB_ADMIN_PASSWORD
+              value: mongodb_admin_password
+            - name: MONGODB_REPLICA_NAME
+              value: rs0
+            - name: MONGODB_KEYFILE_VALUE
+              value: 12345678901234567890
+            - name: MONGODB_SERVICE_NAME
+              value: mongodb-internal
+          readinessProbe:
+            exec:
+              command:
+                - stat
+                - /tmp/initialized
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+        labels:
+          name: mongodb
+      spec:
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 4Gi" | oc create -f -
 
 #configmaps
 echo "Setting config maps for ${PARKS_PROD} project"
