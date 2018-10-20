@@ -6,6 +6,9 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+BASEDIR=$(dirname "$0")
+echo "$BASEDIR"
+
 GUID=$1
 PARKS_PROD=${GUID}-parks-prod
 PARKS_DEV=${GUID}-parks-dev
@@ -26,12 +29,12 @@ oc create -f ../templates/mongodb-svc.yml -n ${PARKS_PROD}
 oc create -f ../templates/mongodb-stateful.yml -n ${PARKS_PROD}
 
 #configmaps
-oc create configmap mlbparks-blue-config --from-env-file=../templates/mlbparks-blue.env -n ${PARKS_PROD}
-oc create configmap nationalparks-blue-config --from-env-file=../templates/nationalparks-blue.env -n ${PARKS_PROD}
-oc create configmap parksmap-blue-config --from-env-file=../templates/parksmap-blue.env -n ${PARKS_PROD}
-oc create configmap mlbparks-green-config --from-env-file=../templates/mlbparks-green.env -n ${PARKS_PROD}
-oc create configmap nationalparks-green-config --from-env-file=../templates/nationalparks-green.env -n ${PARKS_PROD}
-oc create configmap parksmap-green-config --from-env-file=../templates/parksmap-green.env -n ${PARKS_PROD}
+oc create configmap mlbparks-blue-config --from-env-file= ../templates/mlbparks-blue.env -n ${PARKS_PROD}
+oc create configmap nationalparks-blue-config --from-env-file= ../templates/nationalparks-blue.env -n ${PARKS_PROD}
+oc create configmap parksmap-blue-config --from-env-file= ../templates/parksmap-blue.env -n ${PARKS_PROD}
+oc create configmap mlbparks-green-config --from-env-file= ../templates/mlbparks-green.env -n ${PARKS_PROD}
+oc create configmap nationalparks-green-config --from-env-file= ../templates/nationalparks-green.env -n ${PARKS_PROD}
+oc create configmap parksmap-green-config --from-env-file= ../templates/parksmap-green.env -n ${PARKS_PROD}
 
 #blue
 oc new-app ${GUID}-parks-dev/mlbparks:0.0 --name=mlbparks-blue --allow-missing-imagestream-tags=true -n ${PARKS_PROD}
