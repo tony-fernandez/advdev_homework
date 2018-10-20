@@ -6,6 +6,15 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+MLB_PARKS_DEV='MLB Parks (Dev)'
+NATIONAL_PARKS_DEV='National Parks (Dev)'
+PARKS_MAP='ParksMap (Dev)'
+DB_HOST=mongodb
+DB_PORT=27017
+DB_USERNAME=mongodb
+DB_PASSWORD=mongodb
+DB_NAME=parks
+
 GUID=$1
 PARKS_DEV=${GUID}-parks-dev
 echo "Setting up Parks Development Environment in project ${PARKS_DEV}"
@@ -17,26 +26,53 @@ oc policy add-role-to-user view --serviceaccount=default -n ${PARKS_DEV}
 oc policy add-role-to-user edit system:serviceaccount:$GUID-jenkins:jenkins -n ${PARKS_DEV}
 oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n ${PARKS_DEV}
 # Create a MongoDB database
-oc new-app --template=mongodb-persistent --param=MONGODB_USER=mongodb --param=MONGODB_PASSWORD=mongodb --param=MONGODB_DATABASE=parks -n ${PARKS_DEV}
+echo "Setting up mongo database"
+oc new-app --template=mongodb-persistent \
+	--param=MONGODB_USER=${DB_USERNAME} \
+	--param=MONGODB_PASSWORD=${DB_PASSWORD} \
+	--param=MONGODB_DATABASE=${DB_NAME} -n ${PARKS_DEV}
 # Create binary build configurations for the pipelines to use for each microservice
 oc new-build --binary=true --name="mlbparks" jboss-eap70-openshift:1.7 -n ${PARKS_DEV}
 oc new-build --binary=true --name="nationalparks" redhat-openjdk18-openshift:1.2 -n ${PARKS_DEV}
 oc new-build --binary=true --name="parksmap" redhat-openjdk18-openshift:1.2 -n ${PARKS_DEV}
 # Create ConfigMaps for configuration of the application
-oc create configmap mlbparks-dev-config --from-env-file=../templates/mlbparks-dev.env -n ${PARKS_DEV}
-oc create configmap nationalparks-dev-config --from-env-file=../templates/nationalparks-dev.env -n ${PARKS_DEV}
-oc create configmap parksmap-dev-config --from-env-file=../templates/parksmap-dev.env -n ${PARKS_DEV}
+echo "Creating mlbparks-dev-config config map"
+oc create mlbparks-dev-config \
+	--from-literal=APPNAME=${MLB_PARKS_DEV} \
+    --from-literal=DB_HOST=${DB_HOST}
+    --from-literal=DB_PORT=${DB_PORT}
+    --from-literal=DB_USERNAME=${DB_USERNAME}
+    --from-literal=DB_PASSWORD=${DB_PASSWORD}
+    --from-literal=DB_NAME=${DB_NAME}
+echo "Creating nationalparks-dev-config config map"    
+oc create nationalparks-dev-config \
+	--from-literal=APPNAME=${NATIONAL_PARKS_DEV} \
+	--from-literal=DB_HOST=${DB_HOST}
+    --from-literal=DB_PORT=${DB_PORT}
+    --from-literal=DB_USERNAME=${DB_USERNAME}
+    --from-literal=DB_PASSWORD=${DB_PASSWORD}
+    --from-literal=DB_NAME=${DB_NAME}
+echo "Creating parksmap-dev-config config map"    
+oc create parksmap-dev-config \
+	--from-literal=APPNAME=${PARKS_MAP} \
+	--from-literal=DB_HOST=${DB_HOST}
+    --from-literal=DB_PORT=${DB_PORT}
+    --from-literal=DB_USERNAME=${DB_USERNAME}
+    --from-literal=DB_PASSWORD=${DB_PASSWORD}
+    --from-literal=DB_NAME=${DB_NAME}
 # Set up placeholder deployment configurations for the three microservices
 oc new-app ${PARKS_DEV}/mlbparks:0.0-0 --name=mlbparks --allow-missing-imagestream-tags=true -n ${PARKS_DEV}
 oc new-app ${PARKS_DEV}/nationalparks:0.0-0 --name=nationalparks --allow-missing-imagestream-tags=true -n ${PARKS_DEV}
 oc new-app ${PARKS_DEV}/parksmap:0.0-0 --name=parksmap --allow-missing-imagestream-tags=true -n ${PARKS_DEV}
+
 oc set triggers dc/mlbparks --remove-all -n ${PARKS_DEV}
 oc set triggers dc/nationalparks --remove-all -n ${PARKS_DEV}
 oc set triggers dc/parksmap --remove-all -n ${PARKS_DEV}
+
 # Configure the deployment configurations using the ConfigMaps
-oc set env dc/mlbparks --from=configmap/mlbparks-config -n ${PARKS_DEV}
-oc set env dc/nationalparks --from=configmap/nationalparks-config -n ${PARKS_DEV}
-oc set env dc/parksmap --from=configmap/parksmap-config -n ${PARKS_DEV}
+oc set env dc/mlbparks --from=configmap/mlbparks-dev-config -n ${PARKS_DEV}
+oc set env dc/nationalparks --from=configmap/nationalparks-dev-config -n ${PARKS_DEV}
+oc set env dc/parksmap --from=configmap/parksmap-dev-config -n ${PARKS_DEV}
 
 oc expose dc mlbparks --port 8080 -n ${PARKS_DEV}
 oc expose dc nationalparks --port 8080 -n ${PARKS_DEV}
