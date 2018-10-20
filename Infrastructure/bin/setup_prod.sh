@@ -21,9 +21,9 @@ oc policy add-role-to-user edit system:serviceaccount:$GUID-jenkins:jenkins -n $
 oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n ${PARKS_PROD}
 
 # set up a MongoDB database
-oc create -f ./MongoDB/config/mongo-headless.yaml -n ${PARKS_PROD}
-oc create -f ./MongoDB/config/mongo-regular-service.yaml -n ${PARKS_PROD}
-oc create -f ./MongoDB/config/mongo-statefulset.yaml -n ${PARKS_PROD}
+oc create -f ../templates/mongodb-headless-svc.yml -n ${PARKS_PROD}
+oc create -f ../templates/mongodb-svc.yml -n ${PARKS_PROD}
+oc create -f ../templates/mongodb-stateful.yml -n ${PARKS_PROD}
 
 #configmaps
 oc create configmap mlbparks-blue-config --from-env-file=../templates/mlbparks-blue.env -n ${PARKS_PROD}
