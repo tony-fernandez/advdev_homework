@@ -32,11 +32,7 @@ oc rollout resume dc jenkins -n ${JENKINS_PROJECT_NAME}
 oc rollout status dc/jenkins --watch -n ${JENKINS_PROJECT_NAME}
 
 echo "Building slave...."
-oc new-build \
-   -D $'FROM docker.io/openshift/jenkins-slave-maven-centos7:v3.9\n
-        USER root\nRUN yum -y install skopeo && yum clean all\n
-        USER 1001' \
-   --name=jenkins-slave-appdev -n ${GUID}-jenkins
+oc new-build --name=jenkins-slave-maven-appdev --dockerfile= ../docker/Dockerfile -n ${jenkinsProjectName}
    
 oc logs -f bc/jenkins-slave-maven-appdev
 
