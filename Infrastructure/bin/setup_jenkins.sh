@@ -12,18 +12,39 @@ REPO=$2
 CLUSTER=$3
 echo "Setting up Jenkins in project ${GUID}-jenkins from Git Repo ${REPO} for Cluster ${CLUSTER}"
 
-# Code to set up the Jenkins project to execute the
-# three pipelines.
-# This will need to also build the custom Maven Slave Pod
-# Image to be used in the pipelines.
-# Finally the script needs to create three OpenShift Build
-# Configurations in the Jenkins Project to build the
-# three micro services. Expected name of the build configs:
-# * mlbparks-pipeline
-# * nationalparks-pipeline
-# * parksmap-pipeline
-# The build configurations need to have two environment variables to be passed to the Pipeline:
-# * GUID: the GUID used in all the projects
-# * CLUSTER: the base url of the cluster used (e.g. na39.openshift.opentlc.com)
+#Switch to jenkins project to make sure app is created in correct project.
+jenkinsProjectName=${GUID}-jenkins
 
-# To be Implemented by Student
+echo "Creating new project ${jenkinsProjectName}" 
+oc project ${jenkinsProjectName}
+
+# Create the new jenkins app
+oc new-app jenkins-persistent --param ENABLE_OAUTH=true --param MEMORY_LIMIT=2Gi --param VOLUME_CAPACITY=4Gi -n ${jenkinsProjectName}
+
+# adding resource limits
+#oc rollout pause dc jenkins -n ${jenkinsProjectName}
+
+#oc set resources dc jenkins --limits=memory=4Gi,cpu=2 --requests=memory=4Gi,cpu=1 -n ${jenkinsProjectName}
+#oc rollout resume dc jenkins -n ${jenkinsProjectName}
+oc rollout status dc/jenkins --watch -n ${jenkinsProjectName}
+
+echo "New slave build...."
+oc new-build --name=jenkins-slave-maven-appdev --dockerfile="$(< ./Infrastructure/docker/Dockerfile)" -n ${jenkinsProjectName}
+
+oc logs -f bc/jenkins-slave-maven-appdev
+
+while : ; do
+    oc get pod -n ${jenkinsProjectName} | grep 'slave' | grep "Completed"
+    if [ $? == "0" ]
+      then
+        break
+      else
+        echo "Waiting for Jenkins slave"
+        sleep 10
+    fi
+done
+
+echo "Configuring slave"
+# configure kubernetes PodTemplate plugin.
+oc new-app -f ./Infrastructure/templates/jenkins-configuration.yaml --param GUID=${GUID} -n ${jenkinsProjectName}
+echo "Slave configuration completed"
