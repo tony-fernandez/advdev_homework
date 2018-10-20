@@ -39,16 +39,9 @@ oc rollout pause dc nexus3
 oc patch dc nexus3 --patch='{ "spec": { "strategy": { "type": "Recreate" }}}'
 oc set resources dc nexus3 --limits=memory=2Gi,cpu=2 --requests=memory=1Gi,cpu=500m
 
-echo "apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nexus-pvc
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 4Gi" | oc create -f -
+# Create persistent volume mount
+oc create -f ../templates/nexus-pvc.yaml
+
 
 oc set volume dc/nexus3 --add --overwrite --name=nexus3-volume-1 --mount-path=/nexus-data/ --type persistentVolumeClaim --claim-name=nexus-pvc
 
