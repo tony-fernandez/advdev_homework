@@ -6,9 +6,9 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-MLB_PARKS_DEV=MLB Parks (Dev)
-NATIONAL_PARKS_DEV=National Parks (Dev)
-PARKS_MAP=ParksMap (Dev)
+MLB_PARKS_DEV="MLB Parks (Dev)"
+NATIONAL_PARKS_DEV="National Parks (Dev)"
+PARKS_MAP="ParksMap (Dev)"
 DB_HOST=mongodb
 DB_PORT=27017
 DB_USERNAME=mongodb

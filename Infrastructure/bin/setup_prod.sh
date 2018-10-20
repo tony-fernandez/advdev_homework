@@ -6,12 +6,12 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-MLB_PARKS_BLUE=MLB Parks (Blue)
-NATIONAL_PARKS_BLUE=National Parks (Blue)
-PARKS_MAP_BLUE=ParksMap (Blue)
-MLB_PARKS_GREEN=MLB Parks (Green)
-NATIONAL_PARKS_GREEN=National Parks (Green)
-PARKS_MAP_GREEN=ParksMap (Green)
+MLB_PARKS_BLUE="MLB Parks (Blue)"
+NATIONAL_PARKS_BLUE="National Parks (Blue)"
+PARKS_MAP_BLUE="ParksMap (Blue)"
+MLB_PARKS_GREEN="MLB Parks (Green)"
+NATIONAL_PARKS_GREEN="National Parks (Green)"
+PARKS_MAP_GREEN="ParksMap (Green)"
 DB_HOST=mongodb
 DB_PORT=27017
 DB_USERNAME=mongodb
