@@ -53,5 +53,5 @@ done
 
 echo "Configuring slave"
 # configure kubernetes PodTemplate plugin.
-oc new-app -f ./Infrastructure/templates/jenkins-config.yaml --param GUID=${GUID} -n ${JENKINS_PROJECT_NAME}
+oc new-app -f ../templates/jenkins-config.yaml --param GUID=${GUID} -n ${JENKINS_PROJECT_NAME}
 echo "Slave configuration completed"
