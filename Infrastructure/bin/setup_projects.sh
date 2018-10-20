@@ -9,10 +9,10 @@ fi
 GUID=$1
 USER=$2
 echo "Creating all Homework Projects for GUID=${GUID} and USER=${USER}"
-oc new-project ${GUID}-nexus        --display-name="${GUID} AdvDev Homework Nexus"
-oc new-project ${GUID}-sonarqube    --display-name="${GUID} AdvDev Homework Sonarqube"
-oc new-project ${GUID}-jenkins    --display-name="${GUID} AdvDev Homework Jenkins"
-oc new-project ${GUID}-parks-dev  --display-name="${GUID} AdvDev Homework Parks Development"
+oc new-project ${GUID}-nexus --display-name="${GUID} AdvDev Homework Nexus"
+oc new-project ${GUID}-sonarqube --display-name="${GUID} AdvDev Homework Sonarqube"
+oc new-project ${GUID}-jenkins --display-name="${GUID} AdvDev Homework Jenkins"
+oc new-project ${GUID}-parks-dev --display-name="${GUID} AdvDev Homework Parks Development"
 oc new-project ${GUID}-parks-prod --display-name="${GUID} AdvDev Homework Parks Production"
 
 oc policy add-role-to-user admin ${USER} -n ${GUID}-nexus
