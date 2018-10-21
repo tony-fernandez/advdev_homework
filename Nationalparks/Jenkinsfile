@@ -1,6 +1,6 @@
 // Jenkinsfile for NationalParks
  node('maven-slave') {
-    echo "GUID: ${GUID}"
+    echo "GUID: 21fb"
     echo "CLUSTER: ${CLUSTER}"
 
     // Checkout Source Code
@@ -46,14 +46,14 @@
     stage('Code Analysis') {
     	echo "Running Code Analysis"
       
-      	sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-${GUID}-sonarqube.apps.${CLUSTER}/ -Dsonar.projectName=${JOB_BASE_NAME}-${devTag}"
+      	sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-21fb-sonarqube.apps.${CLUSTER}/ -Dsonar.projectName=${JOB_BASE_NAME}-${devTag}"
     }
 
     // Publish the built war file to Nexus
     stage('Publish to Nexus') {
     	echo "Publish to Nexus"
       
-    	sh "${mvnCmd} deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://nexus3.${GUID}-nexus.svc.cluster.local:8081/repository/releases"
+    	sh "${mvnCmd} deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://nexus3.21fb-nexus.svc.cluster.local:8081/repository/releases"
     }
 
     // Build the OpenShift Image in OpenShift and tag it.
@@ -62,10 +62,10 @@
 
     	// Start Binary Build in OpenShift using the file we just published
     	// The filename is in the 'target' directory of your current Jenkins workspace
-    	sh "oc start-build nationalparks --follow --from-file=./target/nationalparks.jar -n ${GUID}-parks-dev"
+    	sh "oc start-build nationalparks --follow --from-file=./target/nationalparks.jar -n 21fb-parks-dev"
 
      	// Tag the image using the devTag
-    	openshiftTag alias: 'false', destStream: 'nationalparks', destTag: devTag, destinationNamespace: '${GUID}-parks-dev', namespace: '${GUID}-parks-dev', srcStream: 'nationalparks', srcTag: 'latest', verbose: 'false'
+    	openshiftTag alias: 'false', destStream: 'nationalparks', destTag: devTag, destinationNamespace: '21fb-parks-dev', namespace: '21fb-parks-dev', srcStream: 'nationalparks', srcTag: 'latest', verbose: 'false'
     }
 
     // Deploy the built image to the Development Environment.
@@ -73,13 +73,13 @@
     	echo "Deploying container image to Development Project"
 
     	// Update the Image on the Development Deployment Config
-    	sh "oc set image dc/nationalparks nationalparks=docker-registry.default.svc:5000/${GUID}-parks-dev/nationalparks:${devTag} -n ${GUID}-parks-dev"
+    	sh "oc set image dc/nationalparks nationalparks=docker-registry.default.svc:5000/21fb-parks-dev/nationalparks:${devTag} -n 21fb-parks-dev"
 
     	// Deploy the development application.
-   	 	// Replace ${GUID}-parks-dev with the name of your production project
-    	openshiftDeploy depCfg: 'nationalparks', namespace: '${GUID}-parks-dev', verbose: 'false', waitTime: '20', waitUnit: 'min'
-    	openshiftVerifyDeployment depCfg: 'nationalparks', namespace: '${GUID}-parks-dev', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
-    	openshiftVerifyService namespace: '${GUID}-parks-dev', svcName: 'nationalparks', verbose: 'false'
+   	 	// Replace 21fb-parks-dev with the name of your production project
+    	openshiftDeploy depCfg: 'nationalparks', namespace: '21fb-parks-dev', verbose: 'false', waitTime: '20', waitUnit: 'min'
+    	openshiftVerifyDeployment depCfg: 'nationalparks', namespace: '21fb-parks-dev', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+    	openshiftVerifyService namespace: '21fb-parks-dev', svcName: 'nationalparks', verbose: 'false'
     }
 
     // Run Integration Tests in the Development Environment.
@@ -88,20 +88,20 @@
       	echo "Running Integration Tests"
 
       	echo "Health check nationalparks"
-        sh "curl -i  http://nationalparks-${GUID}-parks-dev.apps.${CLUSTER}/ws/healthz/"
+        sh "curl -i  http://nationalparks-21fb-parks-dev.apps.${CLUSTER}/ws/healthz/"
 
       	echo "ls ws info"
-        sh "curl -i -H 'Content-Length: 0' -X GET http://nationalparks-${GUID}-parks-dev.apps.${CLUSTER}/ws/info/"
+        sh "curl -i -H 'Content-Length: 0' -X GET http://nationalparks-21fb-parks-dev.apps.${CLUSTER}/ws/info/"
     }
 
     // Copy Image to Nexus Docker Registry
     stage('Copy Image to Nexus Docker Registry') {
     	echo "Copy image to Nexus Docker Registry"
 
-    	sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds openshift:\$(oc whoami -t) --dest-creds admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/${GUID}-parks-dev/nationalparks:${devTag} docker://nexus-registry.${GUID}-nexus.svc.cluster.local:5000/nationalparks:${devTag}"
+    	sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds openshift:\$(oc whoami -t) --dest-creds admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/21fb-parks-dev/nationalparks:${devTag} docker://nexus-registry.21fb-nexus.svc.cluster.local:5000/nationalparks:${devTag}"
 
     	// Tag the built image with the production tag
-    	openshiftTag alias: 'false', destStream: 'nationalparks', destTag: prodTag, destinationNamespace: '${GUID}-parks-dev', namespace: '${GUID}-parks-dev', srcStream: 'nationalparks', srcTag: devTag, verbose: 'false'
+    	openshiftTag alias: 'false', destStream: 'nationalparks', destTag: prodTag, destinationNamespace: '21fb-parks-dev', namespace: '21fb-parks-dev', srcStream: 'nationalparks', srcTag: devTag, verbose: 'false'
     }
 
     // Blue/Green Deployment into Production
@@ -112,7 +112,7 @@
 
     stage('Blue/Green Production Deployment') {
 
-    	activeApp = sh(returnStdout: true, script: "oc get route nationalparks -n ${GUID}-parks-prod -o jsonpath='{ .spec.to.name }'").trim()
+    	activeApp = sh(returnStdout: true, script: "oc get route nationalparks -n 21fb-parks-prod -o jsonpath='{ .spec.to.name }'").trim()
       	
       	if (activeApp == "nationalparks-green") {
         	destApp = "nationalparks-blue"
@@ -122,18 +122,18 @@
       	echo "Destination Application: " + destApp
 
       	// Update the Image on the Production Deployment Config
-      	sh "oc set image dc/${destApp} ${destApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/nationalparks:${prodTag} -n ${GUID}-parks-prod"
+      	sh "oc set image dc/${destApp} ${destApp}=docker-registry.default.svc:5000/21fb-parks-dev/nationalparks:${prodTag} -n 21fb-parks-prod"
 
       	// Deploy the inactive application.
-      	openshiftDeploy depCfg: destApp, namespace: '${GUID}-parks-prod', verbose: 'false', waitTime: '', waitUnit: 'sec'
-      	openshiftVerifyDeployment depCfg: destApp, namespace: '${GUID}-parks-prod', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true', waitTime: '', waitUnit: 'sec'
-      	openshiftVerifyService namespace: '${GUID}-parks-prod', svcName: destApp, verbose: 'false'
+      	openshiftDeploy depCfg: destApp, namespace: '21fb-parks-prod', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      	openshiftVerifyDeployment depCfg: destApp, namespace: '21fb-parks-prod', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true', waitTime: '', waitUnit: 'sec'
+      	openshiftVerifyService namespace: '21fb-parks-prod', svcName: destApp, verbose: 'false'
     }
 
     stage('Switch over to new Version') {
     	//input "Switch Production?"
       	echo "Switching Production application to ${destApp}."
-      	sh 'oc patch route nationalparks -n ${GUID}-parks-prod -p \'{"spec":{"to":{"name":"' + destApp + '"}}}\''
+      	sh 'oc patch route nationalparks -n 21fb-parks-prod -p \'{"spec":{"to":{"name":"' + destApp + '"}}}\''
     }
 
   }
