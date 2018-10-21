@@ -94,7 +94,7 @@ spec:
       uri: ${REPO}
   strategy:
     jenkinsPipelineStrategy:
-      jenkinsfilePath: NationalParks/Jenkinsfile"  | oc create -f - -n ${JENKINS}
+      jenkinsfilePath: Nationalparks/Jenkinsfile"  | oc create -f - -n ${JENKINS}
 
 echo "Creating parksmap-pipeline configuration"
 

@@ -1,20 +1,11 @@
+#!groovy
 // Jenkinsfile for MLBParks
-podTemplate(
-  label: "skopeo-pod",
-  cloud: "openshift",
-  inheritFrom: "maven",
-  containers: [
-    containerTemplate(
-      name: "jnlp",
-      image: "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-appdev",
-      resourceRequestMemory: "1Gi",
-      resourceLimitMemory: "2Gi"
-    )
-  ]
-) {
-  node('skopeo-pod') {
-    echo "GUID: ${GUID}"
+node('maven-slave') {
+	echo "GUID: ${GUID}"
     echo "CLUSTER: ${CLUSTER}"
+
+    def mvnCmd = "mvn -s ../nexus_settings.xml"
+    echo "mvnCmd: ${mvnCmd}"
 
     // Your Pipeline Code goes here. Make sure to use the ${GUID} and ${CLUSTER} parameters where appropriate
     // You need to build the application in directory `MLBParks`.
@@ -25,11 +16,6 @@ podTemplate(
       git url: 'https://github.com/tony-fernandez/advdev_homework.git'
     }
  
-    def mvnCmd = "mvn -s ../nexus_settings.xml"
-    echo "mvnCmd: ${mvnCmd}"
-    
-  dir('MLBParks') {
-    
     // The following variables need to be defined at the top level
     // and not inside the scope of a stage - otherwise they would not be accessible from other stages.
     // Extract version and other properties from the pom.xml
@@ -47,36 +33,31 @@ podTemplate(
     // Using Maven build the war file
     // Do not run tests in this step
     stage('Build war') {
-    echo "Building version ${devTag}"
-
-    sh "${mvnCmd} clean package -DskipTests"
+    	echo "Building version ${devTag}"
+    	sh "${mvnCmd} clean package -DskipTests"
     }
 
     // Using Maven run the unit tests
     stage('Unit Tests') {
-      echo "Running Unit Tests"
-      
+      echo "Running Unit Tests"     
       sh "${mvnCmd} test"
     }
 
     // Using Maven call SonarQube for Code Analysis
     stage('Code Analysis') {
-      echo "Running Code Analysis"
-      
+      echo "Running Code Analysis" 
       sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-${GUID}-sonarqube.apps.${CLUSTER}/ -Dsonar.projectName=${JOB_BASE_NAME}-${devTag}"
     }
 
     // Publish the built war file to Nexus
     stage('Publish to Nexus') {
       echo "Publish to Nexus"
-      
       sh "${mvnCmd} deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://nexus3.${GUID}-nexus.svc.cluster.local:8081/repository/releases"
     }
 
     // Build the OpenShift Image in OpenShift and tag it.
     stage('Build and Tag OpenShift Image') {
     	echo "Building OpenShift container image mlbparks:${devTag}"
-
     	// Start Binary Build in OpenShift using the file we just published
     	// The filename is in the 'target' directory of your current Jenkins workspace
     	sh "oc start-build mlbparks --follow --from-file=./target/mlbparks.war -n ${GUID}-parks-dev"
@@ -149,10 +130,7 @@ podTemplate(
       	echo "Switching Production application to ${destApp}."
       	sh 'oc patch route mlbparks -n ${GUID}-parks-prod -p \'{"spec":{"to":{"name":"' + destApp + '"}}}\''
     }
-
-  }    
     
-  }
 }
 
 // Convenience Functions to read variables from the pom.xml

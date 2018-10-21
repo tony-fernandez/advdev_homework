@@ -1,18 +1,5 @@
 // Jenkinsfile for NationalParks
-podTemplate(
-  label: "skopeo-pod",
-  cloud: "openshift",
-  inheritFrom: "maven",
-  containers: [
-    containerTemplate(
-      name: "jnlp",
-      image: "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-appdev",
-      resourceRequestMemory: "1Gi",
-      resourceLimitMemory: "2Gi"
-    )
-  ]
-) {
-  node('skopeo-pod') {
+ node('maven-slave') {
     echo "GUID: ${GUID}"
     echo "CLUSTER: ${CLUSTER}"
 
@@ -25,8 +12,6 @@ podTemplate(
     // The file nexus_settings.xml needs to be in the Source Code repository.
     def mvnCmd = "mvn -s ../nexus_settings.xml"
     echo "mvnCmd: ${mvnCmd}"
-
-  dir('NationalParks') {
     
   	// The following variables need to be defined at the top level
     // and not inside the scope of a stage - otherwise they would not be accessible from other stages.
@@ -152,9 +137,6 @@ podTemplate(
     }
 
   }
-
-  }
-}
 
 // Convenience Functions to read variables from the pom.xml
 // Do not change anything below this line.
