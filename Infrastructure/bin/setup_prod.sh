@@ -6,18 +6,18 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-MLB_PARKS_BLUE="MLB Parks (Blue)"
-NATIONAL_PARKS_BLUE="National Parks (Blue)"
-PARKS_MAP_BLUE="ParksMap (Blue)"
-MLB_PARKS_GREEN="MLB Parks (Green)"
-NATIONAL_PARKS_GREEN="National Parks (Green)"
-PARKS_MAP_GREEN="ParksMap (Green)"
 DB_HOST=mongodb
 DB_PORT=27017
 DB_USERNAME=mongodb
 DB_PASSWORD=mongodb
 DB_NAME=parks
 
+MLBPARKS_BLUE_CONFIG=mlbparks-blue-config
+NATIONALPARKS_BLUE_CONFIG=nationalparks-blue-config
+PARKSMAP_BLUE_CONFIG=parksmap-blue-config
+MLBPARKS_GREEN_CONFIG=mlbparks-green-config
+NATIONALPARKS_GREEN_CONFIG=nationalparks-green-config
+PARKSMAP_GREEN_CONFIG=parksmap-green-config
 
 GUID=$1
 PARKS_PROD=${GUID}-parks-prod
@@ -38,55 +38,53 @@ oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n $
 # set up a MongoDB database
 echo "Setting up mongodb for ${PARKS_PROD} project"
 
-oc create -f ./Infrastructure/templates/mongodb-headless-svc.yml -n ${PARKS_PROD}
-oc create -f ./Infrastructure/templates/mongodb-svc.yml -n ${PARKS_PROD}
-oc create -f ./Infrastructure/templates/mongodb-stateful.yml -n ${PARKS_PROD}
+oc create -f ./Infrastructure/templates/mongo-headless.yml -n ${PARKS_PROD}
+oc create -f ./Infrastructure/templates/mongo-service.yml -n ${PARKS_PROD}
+oc create -f ./Infrastructure/templates/mongo-statefulset.yml -n ${PARKS_PROD}
 
-#configmaps
-echo "Setting config maps for ${PARKS_PROD} project"
+#  Blue configmaps
+echo "Creating mlbparks-blue-config config map"
+oc create configmap ${MLBPARKS_BLUE_CONFIG} \
+	--from-env-file=./Infrastructure/templates/mlbparks-blue.env \
+	-n ${PARKS_PROD}
 
-oc create configmap mlbparks-blue-config \
-	--from-literal=APPNAME=${MLB_PARKS_BLUE} \
-    --from-literal=DB_HOST=${DB_HOST}
-    --from-literal=DB_PORT=${DB_PORT}
-    --from-literal=DB_USERNAME=${DB_USERNAME}
-    --from-literal=DB_PASSWORD=${DB_PASSWORD}
-    --from-literal=DB_NAME=${DB_NAME}
-oc create configmap nationalparks-blue-config \
-	--from-literal=APPNAME=${NATIONAL_PARKS_BLUE} \
-    --from-literal=DB_HOST=${DB_HOST}
-    --from-literal=DB_PORT=${DB_PORT}
-    --from-literal=DB_USERNAME=${DB_USERNAME}
-    --from-literal=DB_PASSWORD=${DB_PASSWORD}
-    --from-literal=DB_NAME=${DB_NAME}
-oc create configmap parksmap-blue-config \
-	--from-literal=APPNAME=${PARKS_MAP_BLUE} \
-    --from-literal=DB_HOST=${DB_HOST}
-    --from-literal=DB_PORT=${DB_PORT}
-    --from-literal=DB_USERNAME=${DB_USERNAME}
-    --from-literal=DB_PASSWORD=${DB_PASSWORD}
-    --from-literal=DB_NAME=${DB_NAME}
-oc create configmap mlbparks-green-config \
-	--from-literal=APPNAME=${MLB_PARKS_GREEN} \
-    --from-literal=DB_HOST=${DB_HOST}
-    --from-literal=DB_PORT=${DB_PORT}
-    --from-literal=DB_USERNAME=${DB_USERNAME}
-    --from-literal=DB_PASSWORD=${DB_PASSWORD}
-    --from-literal=DB_NAME=${DB_NAME}
-oc create configmap nationalparks-green-config \
-	--from-literal=APPNAME=${NATIONAL_PARKS_GREEN} \
-    --from-literal=DB_HOST=${DB_HOST}
-    --from-literal=DB_PORT=${DB_PORT}
-    --from-literal=DB_USERNAME=${DB_USERNAME}
-    --from-literal=DB_PASSWORD=${DB_PASSWORD}
-    --from-literal=DB_NAME=${DB_NAME}
-oc create configmap parksmap-green-config \
-	--from-literal=APPNAME=${PARKS_MAP_GREEN} \
-    --from-literal=DB_HOST=${DB_HOST}
-    --from-literal=DB_PORT=${DB_PORT}
-    --from-literal=DB_USERNAME=${DB_USERNAME}
-    --from-literal=DB_PASSWORD=${DB_PASSWORD}
-    --from-literal=DB_NAME=${DB_NAME}
+oc get configmaps ${MLBPARKS_BLUE_CONFIG} -o yaml -n ${PARKS_PROD}
+
+echo "Creating nationalparks-blue-config config map"
+oc create configmap ${NATIONALPARKS_BLUE_CONFIG} \
+	--from-env-file=./Infrastructure/templates/nationalparks-blue.env \
+	-n ${PARKS_PROD}
+
+oc get configmaps ${NATIONALPARKS_BLUE_CONFIG} -o yaml -n ${PARKS_PROD}
+
+echo "Creating parksmap-blue-config config map"
+oc create configmap ${PARKSMAP_BLUE_CONFIG} \
+	--from-env-file=./Infrastructure/templates/parksmap-blue.env \
+	-n ${PARKS_PROD}
+
+oc get configmaps ${PARKSMAP_BLUE_CONFIG} -o yaml -n ${PARKS_PROD}
+
+#  Green configmaps
+echo "Creating mlbparks-green-config config map"
+oc create configmap ${MLBPARKS_GREEN_CONFIG} \
+	--from-env-file=./Infrastructure/templates/mlbparks-green.env \
+	-n ${PARKS_PROD}
+
+oc get configmaps ${MLBPARKS_GREEN_CONFIG} -o yaml -n ${PARKS_PROD}
+
+echo "Creating nationalparks-green-config config map"
+oc create configmap ${NATIONALPARKS_GREEN_CONFIG} \
+	--from-env-file=./Infrastructure/templates/nationalparks-green.env \
+	-n ${PARKS_PROD}
+
+oc get configmaps ${NATIONALPARKS_GREEN_CONFIG} -o yaml -n ${PARKS_PROD}
+
+echo "Creating parksmap-green-config config map"
+oc create configmap ${PARKSMAP_GREEN_CONFIG} \
+	--from-env-file=./Infrastructure/templates/parksmap-green.env \
+	-n ${PARKS_PROD}
+
+oc get configmaps ${PARKSMAP_GREEN_CONFIG} -o yaml -n ${PARKS_PROD}
     
 #blue
 echo "Blue app for ${PARKS_PROD} project"
@@ -98,9 +96,9 @@ oc set triggers dc/mlbparks-blue --remove-all -n ${PARKS_PROD}
 oc set triggers dc/nationalparks-blue --remove-all -n ${PARKS_PROD}
 oc set triggers dc/parksmap-blue --remove-all -n ${PARKS_PROD}
 
-oc set env dc/mlbparks-blue --from=configmap/mlbparks-blue-config -n ${PARKS_PROD}
-oc set env dc/nationalparks-blue --from=configmap/nationalparks-blue-config -n ${PARKS_PROD}
-oc set env dc/parksmap-blue --from=configmap/parksmap-blue-config -n ${PARKS_PROD}
+oc set env dc/mlbparks-blue --from=configmap/${MLBPARKS_BLUE_CONFIG} -n ${PARKS_PROD}
+oc set env dc/nationalparks-blue --from=configmap/${NATIONALPARKS_BLUE_CONFIG} -n ${PARKS_PROD}
+oc set env dc/parksmap-blue --from=configmap/${PARKSMAP_BLUE_CONFIG} -n ${PARKS_PROD}
 
 #green
 echo "Green app for ${PARKS_PROD} project"
@@ -112,9 +110,9 @@ oc set triggers dc/mlbparks-green --remove-all -n ${PARKS_PROD}
 oc set triggers dc/nationalparks-green --remove-all -n ${PARKS_PROD}
 oc set triggers dc/parksmap-green --remove-all -n ${PARKS_PROD}
 
-oc set env dc/mlbparks-green --from=configmap/mlbparks-green-config -n ${PARKS_PROD}
-oc set env dc/nationalparks-green --from=configmap/nationalparks-green-config -n ${PARKS_PROD}
-oc set env dc/parksmap-green --from=configmap/parksmap-green-config -n ${PARKS_PROD}
+oc set env dc/mlbparks-green --from=configmap/${MLBPARKS_GREEN_CONFIG} -n ${PARKS_PROD}
+oc set env dc/nationalparks-green --from=configmap/${NATIONALPARKS_GREEN_CONFIG} -n ${PARKS_PROD}
+oc set env dc/parksmap-green --from=configmap/${PARKSMAP_GREEN_CONFIG} -n ${PARKS_PROD}
 
 #expose
 echo "Exposing dc for ${PARKS_PROD} project"
