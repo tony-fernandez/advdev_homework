@@ -67,3 +67,49 @@ oc new-app -f ./Infrastructure/templates/jenkins-config.yaml \
 	--param GUID=${GUID} \
 	-n ${JENKINS}
 echo "Slave configuration completed"
+
+echo "Creating mlbparks-pipeline configuration"
+
+echo "apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: mlbparks-pipeline
+spec:
+  source:
+    git:
+      uri: ${REPO}
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: MLBParks/Jenkinsfile" | oc create -f - -n ${JENKINS}
+
+echo "Creating nationalparks-pipeline configuration"
+
+echo "kind: BuildConfig
+apiVersion: v1
+metadata:
+  name: nationalparks-pipeline
+spec:
+  source:
+    git:
+      uri: ${REPO}
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: NationalParks/Jenkinsfile"  | oc create -f - -n ${JENKINS}
+
+echo "Creating parksmap-pipeline configuration"
+
+echo "kind: BuildConfig
+apiVersion: v1
+metadata:
+  name: parksmap-pipeline
+spec:
+  source:
+    git:
+      uri: ${REPO}
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: ParksMap/Jenkinsfile"  | oc create -f - -n ${JENKINS}
+
+oc set env bc/mlbparks-pipeline GUID=${GUID} REPO=${REPO} CLUSTER=${CLUSTER} -n ${JENKINS}
+oc set env bc/nationalparks-pipeline GUID=${GUID} REPO=${REPO} CLUSTER=${CLUSTER} -n ${JENKINS}
+oc set env bc/parksmap-pipeline GUID=${GUID} REPO=${REPO} CLUSTER=${CLUSTER} -n ${JENKINS}
