@@ -41,7 +41,7 @@ oc rollout status dc/jenkins --watch -n ${JENKINS}
 echo "Building slave...."
 oc new-build \
 	--name=jenkins-slave-maven-appdev \
-	--dockerfile= \../docker/Dockerfile \
+	--dockerfile=./Infrastructure/docker/Dockerfile \
 	-n ${JENKINS}
    
 oc logs -f bc/jenkins-slave-maven-appdev
