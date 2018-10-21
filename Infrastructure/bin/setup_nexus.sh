@@ -54,6 +54,8 @@ chmod +x setup_nexus3.sh
 ./setup_nexus3.sh admin admin123 http://$(oc get route nexus3 --template='{{ .spec.host }}')
 rm setup_nexus3.sh
 
+oc expose svc/nexus3
+
 oc expose dc nexus3 --port=5000 --name=nexus-registry
 oc create route edge nexus-registry --service=nexus-registry --port=5000
 

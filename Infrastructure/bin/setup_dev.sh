@@ -6,9 +6,9 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-MLB_PARKS_DEV="MLB Parks (Dev)"
-NATIONAL_PARKS_DEV="National Parks (Dev)"
-PARKS_MAP="ParksMap (Dev)"
+MLB_PARKS_DEV=echo "MLB Parks (Dev)"
+NATIONAL_PARKS_DEV=echo "National Parks (Dev)"
+PARKS_MAP=echo "ParksMap (Dev)"
 DB_HOST=mongodb
 DB_PORT=27017
 DB_USERNAME=mongodb
@@ -37,7 +37,7 @@ oc new-build --binary=true --name="nationalparks" redhat-openjdk18-openshift:1.2
 oc new-build --binary=true --name="parksmap" redhat-openjdk18-openshift:1.2 -n ${PARKS_DEV}
 # Create ConfigMaps for configuration of the application
 echo "Creating mlbparks-dev-config config map"
-oc create mlbparks-dev-config \
+oc create configmap mlbparks-dev-config \
 	--from-literal=APPNAME=${MLB_PARKS_DEV} \
     --from-literal=DB_HOST=${DB_HOST}
     --from-literal=DB_PORT=${DB_PORT}
@@ -45,7 +45,7 @@ oc create mlbparks-dev-config \
     --from-literal=DB_PASSWORD=${DB_PASSWORD}
     --from-literal=DB_NAME=${DB_NAME}
 echo "Creating nationalparks-dev-config config map"    
-oc create nationalparks-dev-config \
+oc create configmap nationalparks-dev-config \
 	--from-literal=APPNAME=${NATIONAL_PARKS_DEV} \
 	--from-literal=DB_HOST=${DB_HOST}
     --from-literal=DB_PORT=${DB_PORT}
@@ -53,7 +53,7 @@ oc create nationalparks-dev-config \
     --from-literal=DB_PASSWORD=${DB_PASSWORD}
     --from-literal=DB_NAME=${DB_NAME}
 echo "Creating parksmap-dev-config config map"    
-oc create parksmap-dev-config \
+oc create configmap parksmap-dev-config \
 	--from-literal=APPNAME=${PARKS_MAP} \
 	--from-literal=DB_HOST=${DB_HOST}
     --from-literal=DB_PORT=${DB_PORT}
