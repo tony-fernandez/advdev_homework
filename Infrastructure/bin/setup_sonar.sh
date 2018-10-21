@@ -7,20 +7,34 @@ if [ "$#" -ne 1 ]; then
 fi
 
 GUID=$1
-SONAR_PROJECT_NAME=$GUID-sonarqube
-echo "Setting up Sonarqube in project ${SONAR_PROJECT_NAME}"
+SONAR=$GUID-sonarqube
+echo "Setting up Sonarqube in project ${SONAR}"
 
 # Switch to Sonarqube project.
-echo "Switching to ${SONAR_PROJECT_NAME} project"
-oc project ${SONAR_PROJECT_NAME}
+echo "Switching to ${SONAR} project"
+oc project ${SONAR}
 
 # Setup postgress db
 echo "Setting up postgress database..."
-oc new-app --template=postgresql-persistent --param POSTGRESQL_USER=sonar --param POSTGRESQL_PASSWORD=sonar --param POSTGRESQL_DATABASE=sonar --param VOLUME_CAPACITY=4Gi --labels=app=sonarqube_db 
+oc new-app \
+	--template=postgresql-persistent \
+	--param POSTGRESQL_USER=sonar \
+	--param POSTGRESQL_PASSWORD=sonar \
+	--param POSTGRESQL_DATABASE=sonar \
+	--param VOLUME_CAPACITY=4Gi \
+	--labels=app=sonarqube_db \
+	-n ${SONAR}
 
 # Deploy SonarQube
 echo "Creating new sonaqube app..."
-oc new-app --docker-image=wkulhanek/sonarqube:6.7.4 --env=SONARQUBE_JDBC_USERNAME=sonar --env=SONARQUBE_JDBC_PASSWORD=sonar --env=SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar --labels=app=sonarqube
+oc new-app \
+	--docker-image=wkulhanek/sonarqube:6.7.4 \
+	--env=SONARQUBE_JDBC_USERNAME=sonar \
+	--env=SONARQUBE_JDBC_PASSWORD=sonar \
+	--env=SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar \
+	--labels=app=sonarqube \
+	-n ${SONAR}
+	
 oc rollout pause dc sonarqube
 oc expose service sonarqube
 
@@ -49,4 +63,4 @@ echo "Adding liveliness and readinees probes..."
 oc set probe dc/sonarqube --liveness --failure-threshold 3 --initial-delay-seconds 40 -- echo ok
 oc set probe dc/sonarqube --readiness --failure-threshold 3 --initial-delay-seconds 20 --get-url=http://:9000/about
 oc rollout resume dc sonarqube
-oc rollout status dc/sonarqube --watch -n ${SONAR_PROJECT_NAME}
+oc rollout status dc/sonarqube --watch -n ${SONAR}
