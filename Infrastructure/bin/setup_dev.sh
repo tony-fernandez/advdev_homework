@@ -147,7 +147,7 @@ oc set probe dc/parksmap \
 
 # Expose and label the services properly (parksmap-backend)
 oc expose svc mlbparks \
-	--labels="type=parksmap-backend" 
+	--labels="type=parksmap-backend" \
 	-n ${PARKS_DEV}
 oc expose svc nationalparks \
 	--labels="type=parksmap-backend" \
