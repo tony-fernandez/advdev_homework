@@ -13,13 +13,13 @@ echo "Setting up Nexus in project ${NEXUS}"
 # Change to the correct project
 oc project ${NEXUS}
 
-oc new-app sonatype/nexus3:latest
-oc expose svc nexus3
-oc rollout pause dc nexus3
+oc new-app sonatype/nexus3:latest -n ${NEXUS}
+oc expose svc nexus3 -n ${NEXUS}
+oc rollout pause dc nexus3 -n ${NEXUS}
 
 
-oc patch dc nexus3 --patch='{ "spec": { "strategy": { "type": "Recreate" }}}'
-oc set resources dc nexus3 --limits=memory=2Gi,cpu=2 --requests=memory=1Gi,cpu=500m
+oc patch dc nexus3 --patch='{ "spec": { "strategy": { "type": "Recreate" }}}' -n ${NEXUS}
+oc set resources dc nexus3 --limits=memory=2Gi,cpu=2 --requests=memory=1Gi,cpu=500m -n ${NEXUS}
 
 # Create persistent volume mount
 echo "apiVersion: v1
@@ -31,13 +31,28 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 4Gi" | oc create -f -
+      storage: 4Gi" | oc create -f - -n ${NEXUS}
 
-oc set volume dc/nexus3 --add --overwrite --name=nexus3-volume-1 --mount-path=/nexus-data/ --type persistentVolumeClaim --claim-name=nexus-pvc
+oc set volume dc/nexus3 --add \
+	--overwrite \
+	--name=nexus3-volume-1 \
+	--mount-path=/nexus-data/ \
+	--type persistentVolumeClaim \
+	--claim-name=nexus-pvc -n ${NEXUS}
 
-oc set probe dc/nexus3 --liveness --failure-threshold 3 --initial-delay-seconds 60 -- echo ok
-oc set probe dc/nexus3 --readiness --failure-threshold 3 --initial-delay-seconds 60 --get-url=http://:8081/repository/maven-public/
-oc rollout resume dc nexus3
+oc set probe dc/nexus3 \
+	--liveness \
+	--failure-threshold 3 \
+	--initial-delay-seconds 60 \
+	-- echo ok
+	
+oc set probe dc/nexus3 \
+	--readiness \
+	--failure-threshold 3 \
+	--initial-delay-seconds 60 \
+	--get-url=http://:8081/repository/maven-public/
+	
+oc rollout resume dc nexus3 -n ${NEXUS}
 
 http_status=""
 while : ; do  
@@ -54,14 +69,12 @@ chmod +x setup_nexus3.sh
 ./setup_nexus3.sh admin admin123 http://$(oc get route nexus3 --template='{{ .spec.host }}')
 rm setup_nexus3.sh
 
-oc expose svc/nexus3
+oc expose dc nexus3 --port=5000 --name=nexus-registry -n ${NEXUS}
+oc create route edge nexus-registry --service=nexus-registry --port=5000 -n ${NEXUS}
 
-oc expose dc nexus3 --port=5000 --name=nexus-registry
-oc create route edge nexus-registry --service=nexus-registry --port=5000
+oc routes -n ${NEXUS}
 
-oc get routes -n ${NEXUS}
-
-oc annotate route nexus3 console.alpha.openshift.io/overview-app-route=true
-oc annotate route nexus-registry console.alpha.openshift.io/overview-app-route=false
+oc annotate route nexus3 console.alpha.openshift.io/overview-app-route=true -n ${NEXUS}
+oc annotate route nexus-registry console.alpha.openshift.io/overview-app-route=false -n ${NEXUS}
 
 echo "${NEXUS} completed successfully"

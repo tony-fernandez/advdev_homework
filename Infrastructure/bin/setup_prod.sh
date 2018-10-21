@@ -6,12 +6,12 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-MLB_PARKS_BLUE=echo "MLB Parks (Blue)"
-NATIONAL_PARKS_BLUE=echo "National Parks (Blue)"
-PARKS_MAP_BLUE=echo "ParksMap (Blue)"
-MLB_PARKS_GREEN=echo "MLB Parks (Green)"
-NATIONAL_PARKS_GREEN=echo "National Parks (Green)"
-PARKS_MAP_GREEN=echo "ParksMap (Green)"
+MLB_PARKS_BLUE="MLB Parks (Blue)"
+NATIONAL_PARKS_BLUE="National Parks (Blue)"
+PARKS_MAP_BLUE="ParksMap (Blue)"
+MLB_PARKS_GREEN="MLB Parks (Green)"
+NATIONAL_PARKS_GREEN="National Parks (Green)"
+PARKS_MAP_GREEN="ParksMap (Green)"
 DB_HOST=mongodb
 DB_PORT=27017
 DB_USERNAME=mongodb
@@ -44,6 +44,7 @@ oc create -f ./Infrastructure/templates/mongodb-stateful.yml -n ${PARKS_PROD}
 
 #configmaps
 echo "Setting config maps for ${PARKS_PROD} project"
+
 oc create configmap mlbparks-blue-config \
 	--from-literal=APPNAME=${MLB_PARKS_BLUE} \
     --from-literal=DB_HOST=${DB_HOST}
