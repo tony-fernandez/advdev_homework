@@ -88,13 +88,13 @@ oc set triggers dc/nationalparks --remove-all -n ${PARKS_DEV}
 oc set triggers dc/parksmap --remove-all -n ${PARKS_DEV}
 
 # Configure the deployment configurations using the ConfigMaps
-oc set env dc/mlbparks `
-	--from=configmap/${MLBPARKS_DEV_CONFIG} `
+oc set env dc/mlbparks \
+	--from=configmap/${MLBPARKS_DEV_CONFIG} \
 	-n ${PARKS_DEV}
-oc set env dc/nationalparks `
-	--from=configmap/${NATIONALPARKS_DEV_CONFIG} `
+oc set env dc/nationalparks \
+	--from=configmap/${NATIONALPARKS_DEV_CONFIG} \
 	-n ${PARKS_DEV}
-oc set env dc/parksmap `
+oc set env dc/parksmap \
 	--from=configmap/${PARKSMAP_DEV_CONFIG} \
 	-n ${PARKS_DEV}
 

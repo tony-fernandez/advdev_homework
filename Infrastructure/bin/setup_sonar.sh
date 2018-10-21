@@ -35,8 +35,8 @@ oc new-app \
 	--labels=app=sonarqube \
 	-n ${SONAR}
 	
-oc rollout pause dc sonarqube
-oc expose service sonarqube
+oc rollout pause dc sonarqube -n ${SONAR}
+oc expose service sonarqube -n ${SONAR}
 
 # Create persistent volume claim and set it to sonarqube
 echo "Creating persistent volume claim..."
@@ -49,24 +49,41 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 4Gi" | oc create -f -
+      storage: 4Gi" | oc create -f - -n ${SONAR}
 
 oc set volume dc/sonarqube \
 	--add --overwrite \
 	--name=sonarqube-volume-1 \
 	--mount-path=/opt/sonarqube/data/ \
 	--type persistentVolumeClaim \
-	--claim-name=sonarqube-pvc
+	--claim-name=sonarqube-pvc \
 	-n ${SONAR}
 	
 # Set resources
 echo "Setting resources..."
-oc set resources dc/sonarqube --limits=memory=3Gi,cpu=2 --requests=memory=2Gi,cpu=1
-oc patch dc sonarqube --patch='{ "spec": { "strategy": { "type": "Recreate" }}}'
+oc set resources dc/sonarqube \
+	--limits=memory=3Gi,cpu=2 \
+	--requests=memory=2Gi,cpu=1 \
+	-n ${SONAR}
+
+oc patch dc sonarqube \
+	--patch='{ "spec": { "strategy": { "type": "Recreate" }}}' \
+	-n ${SONAR}
 
 # Add liveliness and readiness probes
 echo "Adding liveliness and readinees probes..."
-oc set probe dc/sonarqube --liveness --failure-threshold 3 --initial-delay-seconds 40 -- echo ok
-oc set probe dc/sonarqube --readiness --failure-threshold 3 --initial-delay-seconds 20 --get-url=http://:9000/about
-oc rollout resume dc sonarqube
+oc set probe dc/sonarqube \
+	--liveness \
+	--failure-threshold 3 \
+	--initial-delay-seconds 40 \
+	-- echo ok \
+	-n ${SONAR}
+	
+oc set probe dc/sonarqube \
+	--readiness \
+	--failure-threshold 3 \
+	--initial-delay-seconds 20 \
+	--get-url=http://:9000/about \
+	-n ${SONAR}
+oc rollout resume dc sonarqube -n ${SONAR}
 oc rollout status dc/sonarqube --watch -n ${SONAR}

@@ -38,7 +38,8 @@ oc set volume dc/nexus3 --add \
 	--name=nexus3-volume-1 \
 	--mount-path=/nexus-data/ \
 	--type persistentVolumeClaim \
-	--claim-name=nexus-pvc -n ${NEXUS}
+	--claim-name=nexus-pvc \
+	-n ${NEXUS}
 
 oc set probe dc/nexus3 \
 	--liveness \
@@ -75,7 +76,7 @@ rm setup_nexus3.sh
 oc expose dc nexus3 --port=5000 --name=nexus-registry -n ${NEXUS}
 oc create route edge nexus-registry --service=nexus-registry --port=5000 -n ${NEXUS}
 
-oc routes -n ${NEXUS}
+oc get routes -n ${NEXUS}
 
 oc annotate route nexus3 console.alpha.openshift.io/overview-app-route=true -n ${NEXUS}
 oc annotate route nexus-registry console.alpha.openshift.io/overview-app-route=false -n ${NEXUS}
