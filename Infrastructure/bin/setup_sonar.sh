@@ -51,8 +51,14 @@ spec:
     requests:
       storage: 4Gi" | oc create -f -
 
-oc set volume dc/sonarqube --add --overwrite --name=sonarqube-volume-1 --mount-path=/opt/sonarqube/data/ --type persistentVolumeClaim --claim-name=sonarqube-pvc
-
+oc set volume dc/sonarqube \
+	--add --overwrite \
+	--name=sonarqube-volume-1 \
+	--mount-path=/opt/sonarqube/data/ \
+	--type persistentVolumeClaim \
+	--claim-name=sonarqube-pvc
+	-n ${SONAR}
+	
 # Set resources
 echo "Setting resources..."
 oc set resources dc/sonarqube --limits=memory=3Gi,cpu=2 --requests=memory=2Gi,cpu=1

@@ -44,16 +44,19 @@ oc set probe dc/nexus3 \
 	--liveness \
 	--failure-threshold 3 \
 	--initial-delay-seconds 60 \
-	-- echo ok
+	-- echo ok \
+	-n ${NEXUS}
 	
 oc set probe dc/nexus3 \
 	--readiness \
 	--failure-threshold 3 \
 	--initial-delay-seconds 60 \
-	--get-url=http://:8081/repository/maven-public/
+	--get-url=http://:8081/repository/maven-public/ \
+	-n ${NEXUS}
 	
 oc rollout resume dc nexus3 -n ${NEXUS}
-
+oc rollout status dc/nexus3 --watch -n ${NEXUS}
+    
 http_status=""
 while : ; do  
   echo "Checking if Nexus is up."
