@@ -1,4 +1,4 @@
-node('skopeo-pod') {
+node('maven-slave') {
 	echo "GUID: ${GUID}"
     echo "CLUSTER: ${CLUSTER}"
 
