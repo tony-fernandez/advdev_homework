@@ -27,7 +27,8 @@ oc new-app jenkins-persistent \
 
 # adding resource limits
 echo "Pausing rollout..."
-oc rollout pause dc jenkins -n ${JENKINS}
+oc rollout pause dc jenkins \
+	-n ${JENKINS}
 
 echo "Setting resources..."
 oc set resources dc jenkins \
@@ -35,13 +36,16 @@ oc set resources dc jenkins \
 	--requests=memory=4Gi,cpu=1 \
 	-n ${JENKINS}
 	
-oc rollout resume dc jenkins -n ${JENKINS}
-oc rollout status dc/jenkins --watch -n ${JENKINS}
+oc rollout resume dc jenkins \
+	-n ${JENKINS}
+oc rollout status dc/jenkins \
+	--watch \
+	-n ${JENKINS}
 
 echo "Building slave...."
 oc new-build \
 	--name=jenkins-slave-maven-appdev \
-	--dockerfile=$(< ./Infrastructure/docker/Dockerfile) \
+	--dockerfile="$(< ./Infrastructure/docker/Dockerfile)" \
 	-n ${JENKINS}
    
 oc logs -f bc/jenkins-slave-maven-appdev
@@ -59,5 +63,7 @@ done
 
 echo "Configuring slave"
 # configure kubernetes PodTemplate plugin.
-oc new-app -f ./Infrastructure/templates/jenkins-config.yaml --param GUID=${GUID} -n ${JENKINS}
+oc new-app -f ./Infrastructure/templates/jenkins-config.yaml \
+	--param GUID=${GUID} \
+	-n ${JENKINS}
 echo "Slave configuration completed"
