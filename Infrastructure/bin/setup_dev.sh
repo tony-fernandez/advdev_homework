@@ -150,8 +150,8 @@ oc set probe dc/parksmap \
 	-n ${PARKS_DEV}
 
 # set deployment hooks to call /ws/data/load/ and populate the database for the back end services
-oc set deployment-hook dc/mlbparks --post -c mlbparks --failure-policy=abort -- curl http://$(oc get route mlbparks -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/ -n ${PARKS_DEV}
-oc set deployment-hook dc/nationalparks --post -c nationalparks --failure-policy=abort -- curl http://$(oc get route nationalparks -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/ -n ${PARKS_DEV}
-oc set deployment-hook dc/parksmap --post -c parksmap --failure-policy=abort -- curl http://$(oc get route parksmap -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/ -n ${PARKS_DEV}
+oc set deployment-hook dc/mlbparks -n ${PARKS_DEV} --post -c mlbparks --failure-policy=abort -- curl http://$(oc get route mlbparks -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
+oc set deployment-hook dc/nationalparks -n ${PARKS_DEV} --post -c nationalparks --failure-policy=abort -- curl http://$(oc get route nationalparks -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
+oc set deployment-hook dc/parksmap -n ${PARKS_DEV} --post -c parksmap --failure-policy=abort -- curl http://$(oc get route parksmap -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
 
 echo "${PARKS_DEV} completed successfully"
