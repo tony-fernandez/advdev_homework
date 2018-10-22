@@ -154,4 +154,8 @@ oc set deployment-hook dc/mlbparks -n ${PARKS_DEV} --post -c mlbparks --failure-
 oc set deployment-hook dc/nationalparks -n ${PARKS_DEV} --post -c nationalparks --failure-policy=abort -- curl http://$(oc get route nationalparks -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
 oc set deployment-hook dc/parksmap -n ${PARKS_DEV} --post -c parksmap --failure-policy=abort -- curl http://$(oc get route parksmap -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
 
+oc get dc mlbparks -o yaml -n ${PARKS_DEV}
+oc get dc nationalparks -o yaml -n ${PARKS_DEV}
+oc get dc parksmap -o yaml -n ${PARKS_DEV}
+
 echo "${PARKS_DEV} completed successfully"

@@ -61,6 +61,10 @@ node('maven-slave') {
 	    	// The filename is in the 'target' directory of your current Jenkins workspace
 	    	sh "oc start-build parksmap --follow --from-file=./target/parksmap.jar -n ${GUID}-parks-dev"
 	
+	    	// OR use the file you just published into Nexus:
+    		sh "oc start-build parksmap --follow --from-file=http://nexus3.${GUID}-nexus.svc.cluster.local:8081/repository/releases/com/openshift/evg/roadshow/parksmap/${version}/parksmap-${version}.jar -n ${GUID}-parks-dev"
+	
+	
 	    	// Tag the image using the devTag
 	    	openshiftTag alias: 'false', destStream: 'parksmap', destTag: devTag, destinationNamespace: '${GUID}-parks-dev', namespace: '${GUID}-parks-dev', srcStream: 'parksmap', srcTag: 'latest', verbose: 'false'
 	    }
