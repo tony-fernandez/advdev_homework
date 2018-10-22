@@ -63,17 +63,17 @@
 	
 	    	// Start Binary Build in OpenShift using the file we just published
 	    	// The filename is in the 'target' directory of your current Jenkins workspace
-	    	//sh "oc start-build nationalparks --follow --from-file=./target/nationalparks.jar -n ${GUID}-parks-dev"
+	    	sh "oc start-build nationalparks --follow --from-file=./target/nationalparks.jar -n ${GUID}-parks-dev"
 	
 	  		// OR use the file you just published into Nexus:
 	  		
-	  		def host = sh "oc get route nexus3 --template='{{ .spec.host }}' -n ${GUID}-nexus"
-	  		echo "Nexus host:${host}"
+	  		//def host = sh "oc get route nexus3 --template='{{ .spec.host }}' -n ${GUID}-nexus"
+	  		//echo "Nexus host:${host}"
 	  		
-	  		def fileUrl = "http://${host}/repository/releases/com/openshift/evg/roadshow/nationalparks/${version}/nationalparks-${version}.jar"
-    		echo "File URL:${fileUrl}"
+	  		//def fileUrl = "http://${host}/repository/releases/com/openshift/evg/roadshow/nationalparks/${version}/nationalparks-${version}.jar"
+    		//echo "File URL:${fileUrl}"
     		
-    		sh "oc start-build nationalparks --follow --from-file=${fileUrl}"
+    		//sh "oc start-build nationalparks --follow --from-file=${fileUrl}"
 	
 	     	// Tag the image using the devTag
 	    	openshiftTag alias: 'false', destStream: 'nationalparks', destTag: devTag, destinationNamespace: '${GUID}-parks-dev', namespace: '${GUID}-parks-dev', srcStream: 'nationalparks', srcTag: 'latest', verbose: 'false'
