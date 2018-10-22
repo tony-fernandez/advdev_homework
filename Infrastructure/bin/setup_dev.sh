@@ -102,10 +102,14 @@ oc expose dc mlbparks --port 8080 -n ${PARKS_DEV}
 oc expose dc nationalparks --port 8080 -n ${PARKS_DEV}
 oc expose dc parksmap --port 8080 -n ${PARKS_DEV}
 
-# set deployment hooks to call /ws/data/load/ and populate the database for the back end services
-oc set deployment-hook dc/mlbparks  -n ${PARKS_DEV} --post -c mlbparks --failure-policy=abort -- curl http://$(oc get route mlbparks -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/
-oc set deployment-hook dc/nationalparks  -n ${PARKS_DEV} --post -c nationalparks --failure-policy=abort -- curl http://$(oc get route nationalparks -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/
-oc set deployment-hook dc/parksmap  -n ${PARKS_DEV} --post -c parksmap --failure-policy=abort -- curl http://$(oc get route parksmap -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/
+# Expose and label the services properly
+oc expose svc mlbparks \
+	--labels="type=parksmap-backend" \
+	-n ${PARKS_DEV}
+oc expose svc nationalparks \
+	--labels="type=parksmap-backend" \
+	-n ${PARKS_DEV}
+oc expose svc parksmap -n ${PARKS_DEV}
 
 # Set up liveness and readiness probes
 oc set probe dc/mlbparks \
@@ -145,12 +149,9 @@ oc set probe dc/parksmap \
 	--get-url=http://:8080/ws/healthz/ \
 	-n ${PARKS_DEV}
 
-# Expose and label the services properly (parksmap-backend)
-oc expose svc mlbparks \
-	--labels="type=parksmap-backend" \
-	-n ${PARKS_DEV}
-oc expose svc nationalparks \
-	--labels="type=parksmap-backend" \
-	-n ${PARKS_DEV}
-oc expose svc parksmap -n ${PARKS_DEV}
+# set deployment hooks to call /ws/data/load/ and populate the database for the back end services
+oc set deployment-hook dc/mlbparks --post -c mlbparks --failure-policy=abort -- curl http://$(oc get route mlbparks -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/ -n ${PARKS_DEV}
+oc set deployment-hook dc/nationalparks --post -c nationalparks --failure-policy=abort -- curl http://$(oc get route nationalparks -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/ -n ${PARKS_DEV}
+oc set deployment-hook dc/parksmap --post -c parksmap --failure-policy=abort -- curl http://$(oc get route parksmap -n ${PARKS_DEV} -o jsonpath='{ .spec.host }')/ws/data/load/ -n ${PARKS_DEV}
+
 echo "${PARKS_DEV} completed successfully"
