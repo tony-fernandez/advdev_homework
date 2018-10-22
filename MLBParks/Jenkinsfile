@@ -69,7 +69,7 @@ node('maven-slave') {
     		
     		//http://$(oc get route nexus3 --template='{{ .spec.host }}' -n ${NEXUS})/repository/releases/org/jboss/quickstarts/eap/mlbparks/${version}/mlbparks-${version}.war
     		
-    		def host = sh "oc get route nexus3 --template='{{ .spec.host }}' -n ${NEXUS}"
+    		def host = sh "oc get route nexus3 --template='{{ .spec.host }}' -n ${GUID}-nexus"
 	  		echo "Nexus host:${host}"
 	  		
 	  		def fileUrl = "http://${host}/repository/releases/org/jboss/quickstarts/eap/mlbparks/${version}/mlbparks-${version}.war"	    	

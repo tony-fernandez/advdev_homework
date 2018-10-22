@@ -67,7 +67,7 @@
 	
 	  		// OR use the file you just published into Nexus:
 	  		
-	  		def host = sh "oc get route nexus3 --template='{{ .spec.host }}' -n ${NEXUS}"
+	  		def host = sh "oc get route nexus3 --template='{{ .spec.host }}' -n ${GUID}-nexus"
 	  		echo "Nexus host:${host}"
 	  		
 	  		def fileUrl = "http://${host}/repository/releases/com/openshift/evg/roadshow/nationalparks/${version}/nationalparks-${version}.jar"
