@@ -21,7 +21,7 @@ oc project ${JENKINS}
 echo "Creating jenkins app..."
 oc new-app jenkins-persistent \
 	--param ENABLE_OAUTH=true \
-	--param MEMORY_LIMIT=2Gi \
+	--param MEMORY_LIMIT=6Gi \
 	--param VOLUME_CAPACITY=4Gi \
 	-n ${JENKINS}
 
@@ -32,8 +32,8 @@ oc rollout pause dc jenkins \
 
 echo "Setting resources..."
 oc set resources dc jenkins \
-	--limits=memory=4Gi,cpu=2 \
-	--requests=memory=4Gi,cpu=1 \
+	--limits=memory=6Gi,cpu=2 \
+	--requests=memory=6Gi,cpu=2 \
 	-n ${JENKINS}
 	
 oc rollout resume dc jenkins \

@@ -56,8 +56,8 @@ objects:
             <command></command>
             <args>${computer.jnlpmac} ${computer.name}</args>
             <ttyEnabled>false</ttyEnabled>
-            <resourceRequestCpu>200m</resourceRequestCpu>
-            <resourceRequestMemory>512Mi</resourceRequestMemory>
+            <resourceRequestCpu>1</resourceRequestCpu>
+            <resourceRequestMemory>2Gi</resourceRequestMemory>
             <resourceLimitCpu>2</resourceLimitCpu>
             <resourceLimitMemory>4Gi</resourceLimitMemory>
             <envVars/>
