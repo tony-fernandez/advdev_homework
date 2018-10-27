@@ -6,94 +6,157 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+DB_HOST=mongodb
+DB_PORT=27017
+DB_USERNAME=mongodb
+DB_PASSWORD=mongodb
+DB_NAME=parks
+
+MLBPARKS_DEV_CONFIG=mlbparks-dev-config
+NATIONALPARKS_DEV_CONFIG=nationalparks-dev-config
+PARKSMAP_DEV_CONFIG=parksmap-dev-config
+
 GUID=$1
-echo "Setting up Parks Development Environment in project ${GUID}-parks-dev"
+PARKS_DEV=${GUID}-parks-dev
+echo "Setting up Parks Development Environment in project ${PARKS_DEV}"
+# Switch to dev
+oc project ${PARKS_DEV}
 
-# Code to set up the parks development project.
+# Grant the correct permissions to the Jenkins service account
+oc policy add-role-to-user view \
+	--serviceaccount=default -n ${PARKS_DEV}
+oc policy add-role-to-user edit system:serviceaccount:$GUID-jenkins:jenkins -n ${PARKS_DEV}
+oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n ${PARKS_DEV}
+# Create a MongoDB database
+echo "Setting up mongo database"
+oc new-app --template=mongodb-persistent \
+	--param=MONGODB_USER=${DB_USERNAME} \
+	--param=MONGODB_PASSWORD=${DB_PASSWORD} \
+	--param=MONGODB_DATABASE=${DB_NAME} \
+	-n ${PARKS_DEV}
+# Create binary build configurations for the pipelines to use for each microservice
+oc new-build \
+	--binary=true \
+	--name="mlbparks" jboss-eap70-openshift:1.7 \
+	-n ${PARKS_DEV}
+oc new-build \
+	--binary=true \
+	--name="nationalparks" redhat-openjdk18-openshift:1.2 \
+	-n ${PARKS_DEV}
+oc new-build \
+	--binary=true \
+	--name="parksmap" redhat-openjdk18-openshift:1.2 \
+	-n ${PARKS_DEV}
+# Create ConfigMaps for configuration of the application
+echo "Creating mlbparks-dev-config config map"
+oc create configmap ${MLBPARKS_DEV_CONFIG} \
+	--from-env-file=./Infrastructure/templates/mlbparks-dev.env \
+	-n ${PARKS_DEV}
 
-# To be Implemented by Student
+oc get configmaps ${MLBPARKS_DEV_CONFIG} -o yaml -n ${PARKS_DEV}
 
-MONGODB_USER=mongodb
-MONGODB_PASSWORD=mongodb
-MONGODB_DATABASE=parks
+echo "Creating nationalparks-dev-config config map"
+oc create configmap ${NATIONALPARKS_DEV_CONFIG} \
+	--from-env-file=./Infrastructure/templates/nationalparks-dev.env \
+	-n ${PARKS_DEV}
 
-# Ensure we are on the correct project
-oc project ${GUID}-parks-dev
+oc get configmaps ${NATIONALPARKS_DEV_CONFIG} -o yaml -n ${PARKS_DEV}
 
-# Add role to jenkins service account in order to modify objects
-oc policy add-role-to-user edit system:serviceaccount:${GUID}-jenkins:jenkins -n ${GUID}-parks-dev
+echo "Creating parksmap-dev-config config map"
+oc create configmap ${PARKSMAP_DEV_CONFIG} \
+	--from-env-file=./Infrastructure/templates/parksmap-dev.env \
+	-n ${PARKS_DEV}
 
-# Setup mongoDB for parks backends
-oc new-app --template=mongodb-persistent --param=MONGODB_USER=${MONGODB_USER} \
-	--param=MONGODB_PASSWORD=${MONGODB_PASSWORD} \
-	--param=MONGODB_DATABASE=${MONGODB_DATABASE} \
-	-n ${GUID}-parks-dev
+oc get configmaps ${PARKSMAP_DEV_CONFIG} -o yaml -n ${PARKS_DEV}
 
-# Setup deployments for applications
+# Set up placeholder deployment configurations for the three microservices
+oc new-app ${PARKS_DEV}/mlbparks:0.0-0 \
+	--name=mlbparks \
+	--allow-missing-imagestream-tags=true \
+	-n ${PARKS_DEV}
+oc new-app ${PARKS_DEV}/nationalparks:0.0-0 \
+	--name=nationalparks \
+	--allow-missing-imagestream-tags=true \
+	-n ${PARKS_DEV}
+oc new-app ${PARKS_DEV}/parksmap:0.0-0 \
+	--name=parksmap \
+	--allow-missing-imagestream-tags=true \
+	-n ${PARKS_DEV}
 
-# MLBParks #
-APP=mlbparks
-APPNAME="MLB Parks (Dev)"
-PROJECT=${GUID}-parks-dev
-BASEIMAGE=jboss-eap70-openshift:1.7
+oc set triggers dc/mlbparks --remove-all -n ${PARKS_DEV}
+oc set triggers dc/nationalparks --remove-all -n ${PARKS_DEV}
+oc set triggers dc/parksmap --remove-all -n ${PARKS_DEV}
 
-oc new-build --binary=true --name="${APP}" ${BASEIMAGE} -n ${PROJECT}
-oc new-app ${PROJECT}/${APP}:0.0-0 --name=${APP} --allow-missing-imagestream-tags=true -n ${PROJECT}
-oc set triggers dc/${APP} --remove-all -n ${PROJECT}
-oc set resources dc/${APP} --limits=cpu=500m,memory=1Gi --requests=cpu=250m,memory=512Mi -n ${PROJECT}
-oc set env dc/${APP} DB_HOST=mongodb DB_PORT=27017 DB_USERNAME=${MONGODB_USER} DB_PASSWORD=${MONGODB_PASSWORD} DB_NAME=${MONGODB_DATABASE} -n ${PROJECT}
-oc create configmap ${APP}-config --from-literal=APPNAME="${APPNAME}" -n ${PROJECT}
-oc set env --from=configmap/${APP}-config dc/${APP} -n ${PROJECT}
-oc set probe dc/${APP} -n ${PROJECT} --liveness --failure-threshold 3 --initial-delay-seconds 40 -- echo ok
-oc set probe dc/${APP} -n ${PROJECT} --readiness --failure-threshold 3 --initial-delay-seconds 30 --get-url=http://:8080/ws/healthz/
-oc expose dc ${APP} --port 8080 -n ${PROJECT}
-sleep 5
-oc set deployment-hook dc/${APP} -n ${PROJECT} --post --failure-policy=abort -- sh -c "sleep 10 && curl -i -X GET http://$(oc get service ${APP} -o jsonpath='{ .spec.clusterIP }' -n ${PROJECT}):8080/ws/data/load/" 
-oc label svc ${APP} type=parksmap-backend app=${APP} --overwrite -n ${PROJECT}
-# MLBParks setup complete #
+# Configure the deployment configurations using the ConfigMaps
+oc set env dc/mlbparks \
+	--from=configmap/${MLBPARKS_DEV_CONFIG} \
+	-n ${PARKS_DEV}
+oc set env dc/nationalparks \
+	--from=configmap/${NATIONALPARKS_DEV_CONFIG} \
+	-n ${PARKS_DEV}
+oc set env dc/parksmap \
+	--from=configmap/${PARKSMAP_DEV_CONFIG} \
+	-n ${PARKS_DEV}
 
-# NationalParks #
-APP=nationalparks
-APPNAME="National Parks (Dev)"
-PROJECT=${GUID}-parks-dev
-BASEIMAGE=redhat-openjdk18-openshift:1.2
+oc expose dc mlbparks --port 8080 -n ${PARKS_DEV}
+oc expose dc nationalparks --port 8080 -n ${PARKS_DEV}
+oc expose dc parksmap --port 8080 -n ${PARKS_DEV}
 
-oc new-build --binary=true --name="${APP}" ${BASEIMAGE} -n ${PROJECT}
-oc new-app ${PROJECT}/${APP}:0.0-0 --name=${APP} --allow-missing-imagestream-tags=true -n ${PROJECT}
-oc set triggers dc/${APP} --remove-all -n ${PROJECT}
-oc set resources dc/${APP} --limits=cpu=500m,memory=1Gi --requests=cpu=250m,memory=512Mi -n ${PROJECT}
-oc set env dc/${APP} DB_HOST=mongodb DB_PORT=27017 DB_USERNAME=${MONGODB_USER} DB_PASSWORD=${MONGODB_PASSWORD} DB_NAME=${MONGODB_DATABASE} -n ${PROJECT}
-oc create configmap ${APP}-config --from-literal=APPNAME="${APPNAME}" -n ${PROJECT}
-oc set env --from=configmap/${APP}-config dc/${APP} -n ${PROJECT}
-oc set probe dc/${APP} -n ${PROJECT} --liveness --failure-threshold 3 --initial-delay-seconds 40 -- echo ok
-oc set probe dc/${APP} -n ${PROJECT} --readiness --failure-threshold 3 --initial-delay-seconds 30 --get-url=http://:8080/ws/healthz/
-oc expose dc ${APP} --port 8080 -n ${PROJECT}
-sleep 5
-oc set deployment-hook dc/${APP} -n ${PROJECT} --post --failure-policy=abort -- sh -c "sleep 10 && curl -i -X GET http://$(oc get service ${APP} -o jsonpath='{ .spec.clusterIP }' -n ${PROJECT}):8080/ws/data/load/" 
-oc label svc ${APP} type=parksmap-backend app=${APP} --overwrite -n ${PROJECT}
+# Expose and label the services properly
+oc expose svc mlbparks \
+	--labels="type=parksmap-backend" \
+	-n ${PARKS_DEV}
+oc expose svc nationalparks \
+	--labels="type=parksmap-backend" \
+	-n ${PARKS_DEV}
+oc expose svc parksmap -n ${PARKS_DEV}
 
-# NationalParks setup complete#
+# Set up liveness and readiness probes
+oc set probe dc/mlbparks \
+	--liveness \
+	--failure-threshold 5 \
+	--initial-delay-seconds 30 \
+	-- echo ok \
+	-n ${PARKS_DEV}
+oc set probe dc/mlbparks \
+	--readiness \
+	--failure-threshold 3 \
+	--initial-delay-seconds 60 \
+	--get-url=http://:8080/ws/healthz/ \
+	-n ${PARKS_DEV}
+oc set probe dc/nationalparks \
+	--liveness \
+	--failure-threshold 5 \
+	--initial-delay-seconds 30 \
+	-- echo ok \
+	-n ${PARKS_DEV}
+oc set probe dc/nationalparks \
+	--readiness \
+	--failure-threshold 3 \
+	--initial-delay-seconds 60 \
+	--get-url=http://:8080/ws/healthz/ \
+	-n ${PARKS_DEV}
+oc set probe dc/parksmap \
+	--liveness \
+	--failure-threshold 5 \
+	--initial-delay-seconds 30 \
+	-- echo ok \
+	-n ${PARKS_DEV}
+oc set probe dc/parksmap \
+	--readiness \
+	--failure-threshold 5 \
+	--initial-delay-seconds 60 \
+	--get-url=http://:8080/ws/healthz/ \
+	-n ${PARKS_DEV}
 
-# ParksMap #
-APP=parksmap
-APPNAME="ParksMap (Dev)"
-PROJECT=${GUID}-parks-dev
-BASEIMAGE=redhat-openjdk18-openshift:1.2
+# set deployment hooks to call /ws/data/load/ and populate the database for the back end services
+oc set deployment-hook dc/mlbparks -n ${PARKS_DEV} --post -c mlbparks --failure-policy=abort -- curl http://$(oc get route mlbparks -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
+oc set deployment-hook dc/nationalparks -n ${PARKS_DEV} --post -c nationalparks --failure-policy=abort -- curl http://$(oc get route nationalparks -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
+oc set deployment-hook dc/parksmap -n ${PARKS_DEV} --post -c parksmap --failure-policy=abort -- curl http://$(oc get route parksmap -o jsonpath='{ .spec.host }' -n ${PARKS_DEV})/ws/data/load/ 
 
-oc policy add-role-to-user view --serviceaccount=default -n ${PROJECT}
-
-oc new-build --binary=true --name="${APP}" ${BASEIMAGE} -n ${PROJECT}
-oc new-app ${PROJECT}/${APP}:0.0-0 --name=${APP} --allow-missing-imagestream-tags=true -n ${PROJECT}
-oc set triggers dc/${APP} --remove-all -n ${PROJECT}
-oc set resources dc/${APP} --limits=cpu=500m,memory=1Gi --requests=cpu=250m,memory=512Mi -n ${PROJECT}
-oc create configmap ${APP}-config --from-literal=APPNAME="${APPNAME}" -n ${PROJECT}
-oc set env --from=configmap/${APP}-config dc/${APP} -n ${PROJECT}
-oc set probe dc/${APP} -n ${PROJECT} --liveness --failure-threshold 3 --initial-delay-seconds 40 -- echo ok
-oc set probe dc/${APP} -n ${PROJECT} --readiness --failure-threshold 3 --initial-delay-seconds 30 --get-url=http://:8080/ws/healthz/
-oc expose dc ${APP} --port 8080 -n ${PROJECT}
-oc expose service ${APP} -n ${PROJECT}
-# ParksMap setup complete#
-
+oc get dc mlbparks -o yaml -n ${PARKS_DEV}
+oc get dc nationalparks -o yaml -n ${PARKS_DEV}
+oc get dc parksmap -o yaml -n ${PARKS_DEV}
 
 while : ; do
   echo "Checking if MongoDB_DEV is Ready..."
