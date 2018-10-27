@@ -12,7 +12,9 @@
 	    // The file nexus_settings.xml needs to be in the Source Code repository.
 	    def mvnCmd = "mvn -s ../nexus_settings.xml"
 	    echo "mvnCmd: ${mvnCmd}"
-
+	
+	sleep 60
+	
 	dir('Nationalparks') {
 	  	// The following variables need to be defined at the top level
 	    // and not inside the scope of a stage - otherwise they would not be accessible from other stages.

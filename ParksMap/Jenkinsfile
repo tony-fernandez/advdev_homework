@@ -12,6 +12,8 @@ node('maven-slave') {
     def mvnCmd = "mvn -s ../nexus_settings.xml"
     echo "mvnCmd: ${mvnCmd}"
 
+	sleep 120
+	
   	dir('ParksMap') {
     
 	  	// The following variables need to be defined at the top level
