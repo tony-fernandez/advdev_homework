@@ -7,83 +7,36 @@ if [ "$#" -ne 1 ]; then
 fi
 
 GUID=$1
-SONAR=$GUID-sonarqube
-echo "Setting up Sonarqube in project ${SONAR}"
+echo "Setting up Sonarqube in project $GUID-sonarqube"
 
-# Switch to Sonarqube project.
-echo "Switching to ${SONAR} project"
-oc project ${SONAR}
+# Code to set up the SonarQube project.
+# Ideally just calls a template
+# oc new-app -f ../templates/sonarqube.yaml --param .....
 
-# Setup postgress db
-echo "Setting up postgress database..."
-oc new-app \
-	--template=postgresql-persistent \
-	--param POSTGRESQL_USER=sonar \
-	--param POSTGRESQL_PASSWORD=sonar \
-	--param POSTGRESQL_DATABASE=sonar \
-	--param VOLUME_CAPACITY=4Gi \
-	--labels=app=sonarqube_db \
-	-n ${SONAR}
+# To be Implemented by Student
+################################################################
 
-# Deploy SonarQube
-echo "Creating new sonaqube app..."
-oc new-app \
-	--docker-image=wkulhanek/sonarqube:6.7.4 \
-	--env=SONARQUBE_JDBC_USERNAME=sonar \
-	--env=SONARQUBE_JDBC_PASSWORD=sonar \
-	--env=SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar \
-	--labels=app=sonarqube \
-	-n ${SONAR}
-	
-oc rollout pause dc sonarqube -n ${SONAR}
-oc expose service sonarqube -n ${SONAR}
+# Ensure that we are creating the objects in the correct project
+oc project ${GUID}-sonarqube
 
-# Create persistent volume claim and set it to sonarqube
-echo "Creating persistent volume claim..."
-echo "apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: sonarqube-pvc
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 4Gi" | oc create -f - -n ${SONAR}
+# Call template to provision nexus objects
 
-oc set volume dc/sonarqube \
-	--add --overwrite \
-	--name=sonarqube-volume-1 \
-	--mount-path=/opt/sonarqube/data/ \
-	--type persistentVolumeClaim \
-	--claim-name=sonarqube-pvc \
-	-n ${SONAR}
-	
-# Set resources
-echo "Setting resources..."
-oc set resources dc/sonarqube \
-	--limits=memory=3Gi,cpu=2 \
-	--requests=memory=2Gi,cpu=1 \
-	-n ${SONAR}
+##TODO: Add more parameters
 
-oc patch dc sonarqube \
-	--patch='{ "spec": { "strategy": { "type": "Recreate" }}}' \
-	-n ${SONAR}
+oc new-app -f Infrastructure/templates/sonarqube.yaml -p GUID=${GUID} -n ${GUID}-sonarqube \
+	-p SONARQUBE_CPU_LIMITS=2000m -p DB_CPU_LIMITS=1000m \
+	-p SONARQUBE_MEM_REQUESTS=3Gi -p SONARQUBE_MEM_LIMITS=3Gi
 
-# Add liveliness and readiness probes
-echo "Adding liveliness and readinees probes..."
-oc set probe dc/sonarqube \
-	--liveness \
-	--failure-threshold 3 \
-	--initial-delay-seconds 40 \
-	-- echo ok \
-	-n ${SONAR}
-	
-oc set probe dc/sonarqube \
-	--readiness \
-	--failure-threshold 3 \
-	--initial-delay-seconds 20 \
-	--get-url=http://:9000/about \
-	-n ${SONAR}
-oc rollout resume dc sonarqube -n ${SONAR}
-oc rollout status dc/sonarqube --watch -n ${SONAR}
+while : ; do
+  echo "Checking if Sonarqube is Ready..."
+  oc get pod -n ${GUID}-sonarqube|grep -v deploy|grep -v postgresql|grep "1/1"
+  [[ "$?" == "1" ]] || break
+  echo "...no. Sleeping 10 seconds."
+  sleep 10
+done
+
+echo "************************"
+echo "SonarQube setup complete"
+echo "************************"
+
+exit 0
