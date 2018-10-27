@@ -32,8 +32,8 @@ oc rollout pause dc jenkins \
 
 echo "Setting resources..."
 oc set resources dc jenkins \
-	--limits=memory=2Gi,cpu=1500m \
-	--requests=memory=1Gi,cpu=1000m \
+	--limits=memory=2Gi,cpu=2 \
+	--requests=memory=1Gi,cpu=1 \
 	-n ${JENKINS}
 	
 oc rollout resume dc jenkins \
