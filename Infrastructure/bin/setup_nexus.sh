@@ -19,7 +19,7 @@ oc rollout pause dc nexus3 -n ${NEXUS}
 
 
 oc patch dc nexus3 --patch='{ "spec": { "strategy": { "type": "Recreate" }}}' -n ${NEXUS}
-oc set resources dc nexus3 --limits=memory=2Gi,cpu=2 --requests=memory=1Gi,cpu=500m -n ${NEXUS}
+oc set resources dc nexus3 --limits=memory=2Gi,cpu=1000m --requests=memory=1Gi,cpu=500m -n ${NEXUS}
 
 # Create persistent volume mount
 echo "apiVersion: v1
