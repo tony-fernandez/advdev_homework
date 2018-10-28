@@ -152,3 +152,11 @@ oc set probe dc/mlbparks-green --readiness --failure-threshold 3 --initial-delay
 oc set probe dc/nationalparks-green -n ${PARKS_PROD} --liveness --failure-threshold 5 --initial-delay-seconds 30 -- echo ok
 oc set probe dc/nationalparks-green --readiness --failure-threshold 3 --initial-delay-seconds 60 --get-url=http://:8080/ws/healthz/ -n ${PARKS_PROD}
 
+while : ; do
+  echo "Checking if MongoDB_PROD is Ready..."
+  count=$(oc get pod -n ${GUID}-parks-prod|grep mongodb|grep -v deploy|grep -v build|grep "1/1"|wc -l)
+  #Check that at least one node is up, environment is crappy, so not all of them can start (should normally check for 3)
+  [[ "$count" != "1" ]] || break
+  echo "...no. Sleeping 10 seconds."
+  sleep 10
+done

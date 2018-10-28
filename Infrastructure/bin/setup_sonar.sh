@@ -87,3 +87,11 @@ oc set probe dc/sonarqube \
 	-n ${SONAR}
 oc rollout resume dc sonarqube -n ${SONAR}
 oc rollout status dc/sonarqube --watch -n ${SONAR}
+
+while : ; do
+  echo "Checking if Sonarqube is Ready..."
+  oc get pod -n ${GUID}-sonarqube|grep -v deploy|grep -v postgresql|grep "1/1"
+  [[ "$?" == "1" ]] || break
+  echo "...no. Sleeping 10 seconds."
+  sleep 10
+done
