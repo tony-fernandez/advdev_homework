@@ -28,7 +28,7 @@ oc new-app \
 # Deploy SonarQube
 echo "Creating new sonaqube app..."
 oc new-app \
-	--docker-image=wkulhanek/sonarqube:6.7.4 \
+	--docker-image=wkulhanek/sonarqube:latest \
 	--env=SONARQUBE_JDBC_USERNAME=sonar \
 	--env=SONARQUBE_JDBC_PASSWORD=sonar \
 	--env=SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar \
