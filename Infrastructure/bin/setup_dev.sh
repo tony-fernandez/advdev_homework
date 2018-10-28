@@ -29,11 +29,16 @@ oc policy add-role-to-user edit system:serviceaccount:$GUID-jenkins:jenkins -n $
 oc policy add-role-to-user admin system:serviceaccount:gpte-jenkins:jenkins -n ${PARKS_DEV}
 # Create a MongoDB database
 echo "Setting up mongo database"
-oc new-app --template=mongodb-persistent \
-	--param=MONGODB_USER=${DB_USERNAME} \
-	--param=MONGODB_PASSWORD=${DB_PASSWORD} \
-	--param=MONGODB_DATABASE=${DB_NAME} \
-	-n ${PARKS_DEV}
+oc create -f ./Infrastructure/templates/mongo-service.yml -n ${PARKS_DEV}
+oc create -f ./Infrastructure/templates/mongo-statefulset.yml -n ${PARKS_DEV}
+
+
+#oc new-app --template=mongodb-persistent \
+#	--param=MONGODB_USER=${DB_USERNAME} \
+#	--param=MONGODB_PASSWORD=${DB_PASSWORD} \
+#	--param=MONGODB_DATABASE=${DB_NAME} \
+#	-n ${PARKS_DEV}
+
 # Create binary build configurations for the pipelines to use for each microservice
 oc new-build \
 	--binary=true \
